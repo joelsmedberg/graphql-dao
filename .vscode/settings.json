@@ -1,0 +1,18 @@
+{
+    "files.exclude": {
+        "dist": true,
+        "build": false,
+        "node_modules": false,
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/*.map": true,
+        "*.py": true,
+        "*.yml": true,
+        "*.config": true,
+        "**/node_modules": false,
+        "lib/database/*.js": true
+    },
+    "editor.tabSize": 2,
+    "tslint.ignoreDefinitionFiles": true,
+    "tslint.alwaysShowRuleFailuresAsWarnings": true
+}

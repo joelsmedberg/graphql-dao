@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "es2015",
+    "module": "commonjs",
+    // "declaration": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "removeComments": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "strict": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "types": ["node"],
+    "typeRoots": ["node_modules/@types"],
+    "outDir": "./build"
+  },
+  "lib": [
+    "es6"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.d.ts",
+    "dist",
+    "build",
+    "bin"
+  ]
+}
