@@ -8,7 +8,7 @@ import { IStudent } from "./interfaces/student.generated";
 export class StudentDao extends GraphDao {
     
     /**
-     * 
+     * List all students for a parent. Requires operator rights
      * */
     public getForParent(parentSsn: string): Promise<IStudent[]> {
         const query = `query student_getForParent($parentSsn: String) {
@@ -36,7 +36,7 @@ export class StudentDao extends GraphDao {
 
     
     /**
-     * banan
+     * Returns student for studentSsn, Require Operator Right
      * */
     public getStudent(studetnSsn: string): Promise<IStudent> {
         const query = `query student_getStudent($studetnSsn: String) {
@@ -92,11 +92,67 @@ export class StudentDao extends GraphDao {
 
     
     /**
+     * List students for which logged in user is parent, Requires Parent Status
+     * */
+    public listMy(): Promise<IStudent[]> {
+        const query = `query student_listMy {
+    student_listMy
+     { studentSsn
+ createdAt
+ firstName
+ lastName
+ parent1
+ parent2
+ address
+ address2
+ zipcode
+ city
+ municipality
+ area
+ grade
+ currentSchool
+ canContinue
+ lat
+ lng } 
+}`;
+        return this.post({ query, variables: {  } });
+    }
+
+    
+    /**
      * Creates a new student, fails if student already exists. Requires operator rights
      * */
     public createNew(student: IStudent): Promise<IStudent> {
         const query = `mutation student_createNew($student: StudentInput) {
     student_createNew(student: $student)
+     { studentSsn
+ createdAt
+ firstName
+ lastName
+ parent1
+ parent2
+ address
+ address2
+ zipcode
+ city
+ municipality
+ area
+ grade
+ currentSchool
+ canContinue
+ lat
+ lng } 
+}`;
+        return this.post({ query, variables: { student: student } });
+    }
+
+    
+    /**
+     * Update existing student. Requires operator rights
+     * */
+    public update(student: IStudent): Promise<IStudent> {
+        const query = `mutation student_update($student: StudentInput) {
+    student_update(student: $student)
      { studentSsn
  createdAt
  firstName

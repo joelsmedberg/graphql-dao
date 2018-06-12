@@ -1,5 +1,5 @@
 import * as changeCase from "change-case";
-import { writeFileSync } from "fs";
+import { writeFileSync, existsSync, mkdirSync } from "fs";
 import * as Request from "request-promise-native";
 import { DaoInterfaceBuilder } from "./dao-interface-builder";
 import { StrDao } from "./graph-dao-str";
@@ -51,12 +51,19 @@ fragment comparisonFields on __Type {
 }`;
 
 export class Runner {
-  private readonly ENDPOINT = "http://localhost:8081/graphql";
+  private outputFolder: string;
+  constructor(private endpoint: string, output: string = "./") {
+    if (!output.endsWith("/")) {
+      output = output + "/";
+    }
+    this.outputFolder = output;
+  }
+  // private readonly ENDPOINT = "http://localhost:8081/graphql";
   // private readonly ENDPOINT = "https://backend-dev.mittskolval.se/graphql";
 
   public async run() {
     const data = { query: query, variables: null, operationName: null };
-    const reply = await Request(this.ENDPOINT, {
+    const reply = await Request(this.endpoint, {
       body: JSON.stringify(data),
       headers: {
         "content-type": "application/json"
@@ -71,12 +78,15 @@ export class Runner {
     const daoInterfaceBuilder = new DaoInterfaceBuilder();
     const formattedSchema = daoInterfaceBuilder.render(schema);
     const qBuiler = new QueryBuilder();
+    if (!existsSync(this.outputFolder)) {
+      mkdirSync(this.outputFolder);
+    }
     for (const key in formattedSchema.classes) {
       const c = formattedSchema.classes[key];
       const filename = changeCase.paramCase(c.className) + "-dao.generated.ts";
-      writeFileSync("./output/" + filename, qBuiler.renderClass(c));
+      writeFileSync(this.outputFolder + filename, qBuiler.renderClass(c));
     }
-    writeFileSync("./output/graph-dao.ts", StrDao);
-    new TypeBuilder().run(schema);
+    writeFileSync(this.outputFolder + "graph-dao.ts", StrDao);
+    new TypeBuilder(this.outputFolder).run(schema);
   }
 }

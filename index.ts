@@ -1,4 +1,18 @@
+import * as program from "commander";
 import { Runner } from "./app/runner";
+// import { Runner } from "./app/runner";
 
-const runner = new Runner();
+console.log(JSON.stringify(process.argv));
+try {
+  program
+    .version("1.0.0")
+    .option("-h, --host [type]", "Endpoint to load", "http://localhost:8081/graphql")
+    .option("-o, --output [u]", "Output folder", "./output")
+    .parse(process.argv);
+
+} catch (error) {
+  console.log(error);
+}
+
+const runner = new Runner(program.host, program.output);
 runner.run().then(() => process.exit(0));

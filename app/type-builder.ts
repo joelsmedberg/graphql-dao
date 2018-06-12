@@ -12,8 +12,9 @@ export interface {{className}} {
 }`;
 export class TypeBuilder {
   private compiledTempate = Handlebars.compile(TEMPLATE);
-
-  constructor(private outputFolder = "./output/interfaces/") {
+  private outputFolder: string;
+  constructor(outputFolder: string) {
+    this.outputFolder = outputFolder + "interfaces/";
   }
 
   public run(schema: ISchema) {
@@ -37,7 +38,7 @@ export class TypeBuilder {
       return "";
     }
     const imps = t.fields.map(f => {
-      const input = f.type.name ||  (f.type.ofType && f.type.ofType.name);
+      const input = f.type.name || (f.type.ofType && f.type.ofType.name);
       let fileName = this.toTsFileName(input);
       const className = this.strToTsType(input);
       if (fileName && className) {

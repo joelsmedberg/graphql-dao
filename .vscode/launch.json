@@ -12,7 +12,7 @@
       "name": "Launch Program",
       "cwd": "${workspaceRoot}",
       "stopOnEntry": false,
-      "args": [],
+      "args": ["--host", "https://backend-dev.mittskolval.se/graphql"],
       "preLaunchTask": "compile",
       "runtimeExecutable": null,
       "runtimeArgs": [

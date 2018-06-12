@@ -75,4 +75,96 @@ export class ParentDao extends GraphDao {
         return this.post({ query, variables: {  } });
     }
 
+    
+    /**
+     * Parent SSN may not exist already, requires operator right
+     * */
+    public createNew(parent: IParent): Promise<IParent> {
+        const query = `mutation parent_createNew($parent: ParentInput) {
+    parent_createNew(parent: $parent)
+     { parentSsn
+ createdAt
+ address
+ address2
+ zipcode
+ city
+ firstName
+ lastName
+ email
+ phone
+ lat
+ lng } 
+}`;
+        return this.post({ query, variables: { parent: parent } });
+    }
+
+    
+    /**
+     * Updates a parent object, requires operator right
+     * */
+    public update(parent: IParent): Promise<IParent> {
+        const query = `mutation parent_update($parent: ParentInput) {
+    parent_update(parent: $parent)
+     { parentSsn
+ createdAt
+ address
+ address2
+ zipcode
+ city
+ firstName
+ lastName
+ email
+ phone
+ lat
+ lng } 
+}`;
+        return this.post({ query, variables: { parent: parent } });
+    }
+
+    
+    /**
+     * Update the other parent for one of your students, only email and phone, requires parent status
+     * */
+    public updatePartner(parent: IParent, studentSsn: string): Promise<IParent> {
+        const query = `mutation parent_updatePartner($parent: ParentInput, $studentSsn: String) {
+    parent_updatePartner(parent: $parent, studentSsn: $studentSsn)
+     { parentSsn
+ createdAt
+ address
+ address2
+ zipcode
+ city
+ firstName
+ lastName
+ email
+ phone
+ lat
+ lng } 
+}`;
+        return this.post({ query, variables: { parent: parent,studentSsn: studentSsn } });
+    }
+
+    
+    /**
+     * Lets parent update themselves, only email and phone changable, require parent status
+     * */
+    public updateSelfDef(parent: IParent): Promise<IParent> {
+        const query = `mutation parent_updateSelfDef($parent: ParentInput) {
+    parent_updateSelfDef(parent: $parent)
+     { parentSsn
+ createdAt
+ address
+ address2
+ zipcode
+ city
+ firstName
+ lastName
+ email
+ phone
+ lat
+ lng } 
+}`;
+        return this.post({ query, variables: { parent: parent } });
+    }
+
 }
