@@ -1,8 +1,6 @@
 import * as program from "commander";
 import { Runner } from "./app/runner";
-// import { Runner } from "./app/runner";
 
-console.log(JSON.stringify(process.argv));
 try {
   program
     .version("1.0.0")

@@ -1,6 +1,6 @@
 {
-  "name": "graphql-dao-generator",
-  "version": "1.0.0",
+  "name": "graphql-dao-builder",
+  "version": "1.0.4",
   "description": "",
   "main": "index.js",
   "directories": {
