@@ -11,7 +11,7 @@
 
   Run it from the terminal using 
   
-  node node_modules/graphql-dao-builder --host https://backend-dev.mittskolval.se/graphql --output ./output
+    $ node node_modules/graphql-dao-builder --host https://backend-dev.mittskolval.se/graphql --output ./output
 
 ## License
 
