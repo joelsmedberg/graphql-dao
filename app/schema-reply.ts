@@ -17,12 +17,13 @@ export interface ISchema {
 export interface IType {
   name: string;
   fields: null | undefined | ITypeField[];
+  inputFields: null | undefined | ITypeField[];
 }
 
 export interface ITypeField {
   name: string;
   type: {
-    kind: string | undefined;
+    kind: string |  undefined;
     ofType: INameDesc | undefined;
     name: string | undefined;
   };
@@ -49,6 +50,8 @@ export interface IField extends INameDesc {
 export interface IArg extends INameDesc {
   defaultValue: string | undefined | null;
   type: {
-    name: string;
+    kind: string |  undefined;
+    ofType: INameDesc | undefined;
+    name: string | undefined;
   };
 }

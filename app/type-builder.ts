@@ -34,29 +34,48 @@ export class TypeBuilder {
   }
 
   private renderImports(t: IType) {
-    if (!t.fields) {
+    if (!t.fields && !t.inputFields) {
       return "";
     }
-    const imps = t.fields.map(f => {
-      const input = f.type.name || (f.type.ofType && f.type.ofType.name);
-      let fileName = this.toTsFileName(input);
-      const className = this.strToTsType(input);
-      if (fileName && className) {
-        fileName = fileName.endsWith(".ts") ? fileName.substr(0, fileName.length - 3) : fileName;
-        return `import { ${className} } from "./${fileName}";`;
-      }
-      return "";
-    }).filter(f => !!f).join("\n");
+    const fields = this.getAllFields(t);
+    const imps = fields.map(f => this.fieldToImport(f))
+      .filter(f => !!f)
+      .filter((f, i, self) => self.indexOf(f) === i)
+      .join("\n");
     return imps;
+  }
+
+  private getAllFields(t: IType): ITypeField[] {
+    const fields: ITypeField[] = [];
+    if (t.fields) {
+      fields.push(...t.fields);
+    }
+    if (t.inputFields) {
+      fields.push(...t.inputFields);
+    }
+    return fields;
+  }
+
+  private fieldToImport(f: ITypeField): string {
+    let input = f.type.name || (f.type.ofType && f.type.ofType.name) || "";
+    input = this.stripInputType(input);
+    let fileName = this.toTsFileName(input);
+    const className = this.strToTsType(input);
+    if (fileName && className) {
+      fileName = fileName.endsWith(".ts") ? fileName.substr(0, fileName.length - 3) : fileName;
+      return `import { ${className} } from "./${fileName}";`;
+    }
+    return "";
   }
 
   private buildClass(t: IType): string {
     const className = this.strToTsType(t.name);
-    const str = t.fields && t.fields.map(f => this.buildField(f));
+    const fields = this.getAllFields(t);
+    const str = fields.map(f => this.buildField(f));
     if (str) {
-      const fields = str.join("\n\t");
+      const strFields = str.join("\n\t");
       const imps = this.renderImports(t);
-      return this.compiledTempate({ fields, className, imports: imps });
+      return this.compiledTempate({ fields: strFields, className, imports: imps });
     }
     return "";
   }
@@ -90,9 +109,7 @@ export class TypeBuilder {
     if (!qlType || this.isPrimitive(qlType)) {
       return "";
     }
-    if (qlType.endsWith("Input")) {
-      qlType = qlType.substr(0, qlType.indexOf("Input"));
-    }
+    qlType = this.stripInputType(qlType);
     return changeCase.paramCase(qlType) + ".generated.ts";
   }
 

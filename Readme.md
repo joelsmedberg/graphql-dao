@@ -1,6 +1,6 @@
 # GraphQL DAO Generator
 
-  This is an attempt to auto a data access object class for a graphql endpoint. This is not in anyway or form production ready
+  This is an attempt to auto a data access object class for a graphql endpoint. This is not in any way or form production ready
 
 
 ## Installation

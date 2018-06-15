@@ -1,4 +1,6 @@
-const StrDao = `export interface IQlInput {
+import * as Handlebars from "handlebars";
+const template = `{{{imp}}}
+export interface IQlInput {
   query: string;
   variables: { [key: string]: any };
 }
@@ -26,4 +28,12 @@ export class GraphDao {
   }
 }
 `;
-export { StrDao };
+
+export class GraphDaoBuilder {
+    private compiledQueryTemplate = Handlebars.compile(template);
+    public build(node: boolean = false): string {
+        const imp = node ? `import fetch from "node-fetch";` : "";
+        const reply = this.compiledQueryTemplate({ imp });
+        return reply;
+    }
+}

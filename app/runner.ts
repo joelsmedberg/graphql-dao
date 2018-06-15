@@ -1,8 +1,8 @@
 import * as changeCase from "change-case";
-import { writeFileSync, existsSync, mkdirSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
 import * as Request from "request-promise-native";
 import { DaoInterfaceBuilder } from "./dao-interface-builder";
-import { StrDao } from "./graph-dao-str";
+import { GraphDaoBuilder } from "./graph-dao-builder";
 import { QueryBuilder } from "./query-builder";
 import { ISchema, ISchemaReply } from "./schema-reply";
 import { TypeBuilder } from "./type-builder";
@@ -16,6 +16,16 @@ const query = `{
     }
     types {
     name
+    inputFields {
+      type{
+        name
+        kind
+        ofType {
+          name
+        }
+      }
+      name
+    }
     fields {
       type {
         kind
@@ -52,7 +62,7 @@ fragment comparisonFields on __Type {
 
 export class Runner {
   private outputFolder: string;
-  constructor(private endpoint: string, output: string = "./") {
+  constructor(private endpoint: string, output: string = "./", private isNode: boolean = false) {
     if (!output.endsWith("/")) {
       output = output + "/";
     }
@@ -86,7 +96,8 @@ export class Runner {
       const filename = changeCase.paramCase(c.className) + "-dao.generated.ts";
       writeFileSync(this.outputFolder + filename, qBuiler.renderClass(c));
     }
-    writeFileSync(this.outputFolder + "graph-dao.ts", StrDao);
+    const strDao = new GraphDaoBuilder().build(this.isNode);
+    writeFileSync(this.outputFolder + "graph-dao.ts", strDao);
     new TypeBuilder(this.outputFolder).run(schema);
   }
 }

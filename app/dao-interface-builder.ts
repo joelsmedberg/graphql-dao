@@ -35,10 +35,21 @@ export class DaoInterfaceBuilder {
 
   private renderReferences(dao: IDaoClassDescription) {
     let references: string[] = [];
-    dao.fns.map(fns => references.push(...fns.references));
+    dao.fns.forEach(fns => {
+      references.push(...fns.references);
+    });
+    references = references.map(r => this.stripInputType(r));
     references = references.filter(r => !this.isPrimitive(r));
     references = references.filter((item, pos, self) => self.indexOf(item) === pos);
     dao.imports = references;
+  }
+
+  private stripInputType(name: string): string {
+    const STRIP = "Input";
+    if (name.endsWith(STRIP)) {
+      name = name.substr(0, name.length - STRIP.length);
+    }
+    return name;
   }
 
   private renderFieldTypeMap(schema: ISchema): ITreeDictionary {
@@ -110,6 +121,7 @@ export class DaoInterfaceBuilder {
 
   private fieldToFunction(field: IField, fieldTypes: ITreeDictionary, mutation: boolean): IDaoFunction {
     const references = [this.getTsReturnType(field).replace("[]", "")];
+    references.push(...field.args.map(a => this.getTsArgTypes(a)))
     return {
       className: this.getClassName(field.name),
       description: field.description,
@@ -123,7 +135,7 @@ export class DaoInterfaceBuilder {
   }
 
   private getInputArgument(a: IArg): IDaoFnInput {
-    let tsType = this.isPrimitive(a.type.name) ? a.type.name.toLowerCase() : "I" + a.type.name;
+    let tsType = this.isPrimitive(a.type.name) ? (a.type.name || "").toLowerCase() : "I" + a.type.name;
     if (tsType === "int" || tsType === "float") {
       tsType = "number";
     }
@@ -154,7 +166,21 @@ export class DaoInterfaceBuilder {
     return "any";
   }
 
-  private getTsReturnType(field: IField) {
+  private getTsArgTypes(arg: IArg): string {
+    let fieldName = arg.type.name || "";
+    if (arg.type.kind === "LIST" && arg.type.ofType) {
+      fieldName = arg.type.ofType.name;
+      fieldName = fieldName + "[]";
+    }
+    if (this.isPrimitive(fieldName)) {
+      fieldName = fieldName.toLowerCase();
+    } else {
+      fieldName = "I" + fieldName;
+    }
+    return fieldName;
+  }
+
+  private getTsReturnType(field: IField): string {
     let fieldName = field.type.name || "";
     if (field.type.kind === "LIST" && field.type.ofType) {
       fieldName = field.type.ofType.name;
