@@ -96,7 +96,7 @@ export class Runner {
       const filename = changeCase.paramCase(c.className) + "-dao.generated.ts";
       writeFileSync(this.outputFolder + filename, qBuiler.renderClass(c));
     }
-    const strDao = new GraphDaoBuilder().build(this.isNode);
+    const strDao = new GraphDaoBuilder().build(this.endpoint, this.isNode);
     writeFileSync(this.outputFolder + "graph-dao.ts", strDao);
     new TypeBuilder(this.outputFolder).run(schema);
   }

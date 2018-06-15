@@ -121,7 +121,7 @@ export class DaoInterfaceBuilder {
 
   private fieldToFunction(field: IField, fieldTypes: ITreeDictionary, mutation: boolean): IDaoFunction {
     const references = [this.getTsReturnType(field).replace("[]", "")];
-    references.push(...field.args.map(a => this.getTsArgTypes(a)))
+    references.push(...field.args.map(a => this.getTsArgTypes(a)));
     return {
       className: this.getClassName(field.name),
       description: field.description,
