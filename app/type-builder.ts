@@ -88,7 +88,7 @@ export class TypeBuilder {
     if (!tsType) {
       return false;
     }
-    const primitives = ["int", "string", "boolean", "number", "float"];
+    const primitives = ["int", "string", "boolean", "number", "float", "datetime"];
     return primitives.some(p => p === tsType.toLowerCase());
   }
 
@@ -128,11 +128,22 @@ export class TypeBuilder {
     return qlType;
   }
 
+  private isDate(qlType: string | undefined): boolean {
+    return !!qlType && (qlType.toLowerCase() === "datetime");
+  }
+
   private strToTsType(qlType: string | undefined): string {
     if (!qlType) {
       return "any";
     }
-    let tsType = this.isPrimitive(qlType) ? qlType.toLowerCase() : "I" + qlType;
+    let tsType = "any";
+    if (this.isDate(qlType)) {
+      tsType = "Date";
+    } else if (this.isPrimitive(qlType)) {
+      tsType = qlType.toLowerCase();
+    } else {
+      tsType = "I" + qlType;
+    }
     tsType = this.mergNumTypes(tsType);
     tsType = this.stripInputType(tsType);
     return tsType;

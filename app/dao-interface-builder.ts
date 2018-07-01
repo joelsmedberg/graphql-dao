@@ -180,6 +180,10 @@ export class DaoInterfaceBuilder {
     return fieldName;
   }
 
+  private isDate(fieldName: string): boolean {
+    return fieldName.toLowerCase() === "datetime";
+  }
+
   private getTsReturnType(field: IField): string {
     let fieldName = field.type.name || "";
     if (field.type.kind === "LIST" && field.type.ofType) {
@@ -188,6 +192,8 @@ export class DaoInterfaceBuilder {
     }
     if (this.isPrimitive(fieldName)) {
       fieldName = fieldName.toLowerCase();
+    } else if (this.isDate(fieldName)) {
+      fieldName = "Date";
     } else {
       fieldName = "I" + fieldName;
     }
