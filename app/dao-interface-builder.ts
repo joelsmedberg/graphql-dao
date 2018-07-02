@@ -135,7 +135,14 @@ export class DaoInterfaceBuilder {
   }
 
   private getInputArgument(a: IArg): IDaoFnInput {
-    let tsType = this.isPrimitive(a.type.name) ? (a.type.name || "").toLowerCase() : "I" + a.type.name;
+    let tsType = "any";
+    if (this.isDate(a.type.name)) {
+      tsType = "Date";
+    } else if (this.isPrimitive(a.type.name)) {
+      tsType = (a.type.name || "").toLowerCase();
+    } else {
+      tsType = "I" + a.type.name;
+    }
     if (tsType === "int" || tsType === "float") {
       tsType = "number";
     }
@@ -153,7 +160,7 @@ export class DaoInterfaceBuilder {
     if (!tsType) {
       return false;
     }
-    const primitives = ["int", "string", "boolean", "number", "float"];
+    const primitives = ["int", "string", "boolean", "number", "float", "datetime"];
     return primitives.some(p => p === tsType.toLowerCase());
   }
 
@@ -180,8 +187,8 @@ export class DaoInterfaceBuilder {
     return fieldName;
   }
 
-  private isDate(fieldName: string): boolean {
-    return fieldName.toLowerCase() === "datetime";
+  private isDate(fieldName: string | undefined): boolean {
+    return !!fieldName && fieldName.toLowerCase() === "datetime";
   }
 
   private getTsReturnType(field: IField): string {
@@ -190,10 +197,11 @@ export class DaoInterfaceBuilder {
       fieldName = field.type.ofType.name;
       fieldName = fieldName + "[]";
     }
-    if (this.isPrimitive(fieldName)) {
-      fieldName = fieldName.toLowerCase();
-    } else if (this.isDate(fieldName)) {
+
+    if (this.isDate(fieldName)) {
       fieldName = "Date";
+    } else if (this.isPrimitive(fieldName)) {
+      fieldName = fieldName.toLowerCase();
     } else {
       fieldName = "I" + fieldName;
     }
