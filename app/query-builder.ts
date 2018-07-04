@@ -22,7 +22,8 @@ const classTemplate = `/**
  */
 /* tslint:disable */
 import { GraphDao } from "./graph-dao";
-{{#each imports}}{{{this}}}{{/each}}
+{{#each imports}}{{{this}}}
+{{/each}}
 
 export class {{className}}Dao extends GraphDao {
     {{#each fns}}
@@ -71,8 +72,8 @@ export class QueryBuilder {
 
     private makeImport(daoClass: IDaoClassDescription): string[] {
         return daoClass.imports.map(imp => {
-            const param = changeCase.paramCase(imp.substr(1));
-            const t = `import { ${imp} } from "./interfaces/${param}.generated"; `;
+            const param = changeCase.paramCase(imp);
+            const t = `import { I${imp} } from "./interfaces/${param}.generated"; `;
             return t;
         });
     }

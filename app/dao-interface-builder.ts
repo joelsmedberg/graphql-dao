@@ -2,7 +2,7 @@
 import { IDaoBuildInterface, IDaoClassDescription, IDaoFnInput, IDaoFunction, ITreeDictionary, ITypeTreeNode } from "./dao-build-interface";
 import { IArg, IField, ISchema, IType } from "./schema-reply";
 
-const MAX_DEPTH = 3;
+const MAX_DEPTH = 5;
 export class DaoInterfaceBuilder {
   private readonly DEFAULT_NODE = { type: undefined, name: undefined, primitives: [], nodes: [] };
   public render(reply: ISchema): IDaoBuildInterface {
@@ -96,7 +96,8 @@ export class DaoInterfaceBuilder {
     const primitives = t.fields ? t.fields.filter(f => this.isPrimitive(f.type.name)) : [];
     const objs = t.fields ? t.fields.filter(f => !this.isPrimitive(f.type.name)) : [];
     const nodes = objs.map(obj => {
-      const typeSub = this.getTypeFromSchema(schema, obj.type.name);
+      // @ts-ignore
+      const typeSub = this.getTypeFromSchema(schema, this.getBaseReturnType(obj));
       if (typeSub) {
         return this.buildTypeTree(typeSub, schema, obj.name, depth + 1);
       }
@@ -120,32 +121,23 @@ export class DaoInterfaceBuilder {
   }
 
   private fieldToFunction(field: IField, fieldTypes: ITreeDictionary, mutation: boolean): IDaoFunction {
-    const references = [this.getTsReturnType(field).replace("[]", "")];
-    references.push(...field.args.map(a => this.getTsArgTypes(a)));
+    const references = [this.getBaseReturnType(field)];
+    references.push(...field.args.map(a => this.getBaseReturnType(a)));
+    const queryFields = fieldTypes[this.getBaseReturnType(field)];
     return {
       className: this.getClassName(field.name),
       description: field.description,
       fnName: this.getFnName(field.name),
       inputArguments: field.args.map(a => this.getInputArgument(a)),
       mutation: mutation,
-      queryFields: fieldTypes[this.getBaseReturnType(field)],
+      queryFields: queryFields,
       references: references,
-      tsReturnType: this.getTsReturnType(field)
+      tsReturnType: this.field2ts(field)
     };
   }
 
   private getInputArgument(a: IArg): IDaoFnInput {
-    let tsType = "any";
-    if (this.isDate(a.type.name)) {
-      tsType = "Date";
-    } else if (this.isPrimitive(a.type.name)) {
-      tsType = (a.type.name || "").toLowerCase();
-    } else {
-      tsType = "I" + a.type.name;
-    }
-    if (tsType === "int" || tsType === "float") {
-      tsType = "number";
-    }
+    let tsType = this.toTsType(a.type.name || "");
     if (tsType.endsWith("Input")) {
       tsType = tsType.substr(0, tsType.indexOf("Input"));
     }
@@ -156,6 +148,10 @@ export class DaoInterfaceBuilder {
     } as IDaoFnInput;
   }
 
+  // private isObjectType(field: IField) {
+  //   return !this.isPrimitive(this.getBaseReturnType(field));
+  // }
+
   private isPrimitive(tsType: string | undefined): boolean {
     if (!tsType) {
       return false;
@@ -164,47 +160,45 @@ export class DaoInterfaceBuilder {
     return primitives.some(p => p === tsType.toLowerCase());
   }
 
-  private getBaseReturnType(field: IField): string {
+  private getBaseReturnType(field: IField | IArg): string {
     if (field.type.name) {
       return field.type.name;
-    } else if (field.type.kind === "LIST" && field.type.ofType) {
+    } else if (this.isList(field) && field.type.ofType) {
       return field.type.ofType.name;
     }
     return "any";
   }
 
-  private getTsArgTypes(arg: IArg): string {
-    let fieldName = arg.type.name || "";
-    if (arg.type.kind === "LIST" && arg.type.ofType) {
-      fieldName = arg.type.ofType.name;
-      fieldName = fieldName + "[]";
-    }
-    if (this.isPrimitive(fieldName)) {
-      fieldName = fieldName.toLowerCase();
-    } else {
-      fieldName = "I" + fieldName;
+  private field2ts(field: IField | IArg): string {
+    let fieldName = this.getBaseReturnType(field);
+    fieldName = this.toTsType(fieldName);
+    if (this.isList(field)) {
+      fieldName += "[]";
     }
     return fieldName;
+  }
+
+  private toTsType(qlType: string): string {
+    if (!qlType) {
+      return "any";
+    } else if (this.isDate(qlType)) {
+      return "Date";
+    } else if (this.isPrimitive(qlType)) {
+      qlType = qlType.toLowerCase();
+      if (qlType === "int" || qlType === "float") {
+        return "number";
+      }
+      return qlType;
+    } else {
+      return "I" + qlType;
+    }
+  }
+
+  private isList(field: IField | IArg): boolean {
+    return field && field.type.kind === "LIST";
   }
 
   private isDate(fieldName: string | undefined): boolean {
     return !!fieldName && fieldName.toLowerCase() === "datetime";
-  }
-
-  private getTsReturnType(field: IField): string {
-    let fieldName = field.type.name || "";
-    if (field.type.kind === "LIST" && field.type.ofType) {
-      fieldName = field.type.ofType.name;
-      fieldName = fieldName + "[]";
-    }
-
-    if (this.isDate(fieldName)) {
-      fieldName = "Date";
-    } else if (this.isPrimitive(fieldName)) {
-      fieldName = fieldName.toLowerCase();
-    } else {
-      fieldName = "I" + fieldName;
-    }
-    return fieldName;
   }
 }

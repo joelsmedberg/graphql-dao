@@ -48,7 +48,7 @@ export interface IField extends INameDesc {
 }
 
 export interface IArg extends INameDesc {
-  defaultValue: string | undefined | null;
+  defaultValue?: string | undefined | null;
   type: {
     kind: string |  undefined;
     ofType: INameDesc | undefined;
