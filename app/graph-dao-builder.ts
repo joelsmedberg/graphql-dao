@@ -1,40 +1,98 @@
 import * as Handlebars from "handlebars";
-const template = `{{#if node}}import fetch from "node-fetch";
+import * as Url from "url";
+const template = `// tslint:disable:max-classes-per-file
+// tslint:disable:max-line-length
+{{#if node}}import fetch from "node-fetch";
 {{/if}}
 export interface IQlInput {
     query: string;
     variables: { [key: string]: any };
 }
 
+interface IResponseContent {
+    errors?: IRequestErrorMsg[];
+    data: { [key: string]: any };
+}
+
+interface IRequestErrorMsg {
+    message: string;
+    locations: Array<{ line: number, column: number }>;
+    path: string[];
+    statusCode?: number;
+}
+
+export class RequestError extends Error {
+    constructor(message: string, public statusCode?: number) {
+        super(message);
+    }
+}
+
 export abstract class GraphDao {
+    public static domain = "{{{domain}}}";
+    public static path = "{{path}}";
+
+    public static tokenKey = "GRAPHQL-DAO_KEY";
+    public static protocol = "https://";
+
     // tslint:disable-next-line:max-line-length
     private static readonly REGEX = /(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d\\.\\d+([+-][0-2]\\d:[0-5]\\d|Z))|(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d([+-][0-2]\\d:[0-5]\\d|Z))|(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d([+-][0-2]\\d:[0-5]\\d|Z))/;
 
-    private static readonly DOMAIN = "{{{endpoint}}}";
     protected async post(body: IQlInput): Promise<any> {
-        const resp = await fetch(GraphDao.DOMAIN, {
+        const response = await fetch(this.getUrl(), {
             body: JSON.stringify(body),
             credentials: "include",
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            },
+            headers: this.getHeaders(),
             method: "POST"
         });
-        const text = await resp.text(); // Parse it as text
-        return this.parseResponse(text);
+        const contentData = await this.getDataContent(response);
+        return this.parseResponse(contentData);
     }
 
-    private parseResponse(text: string): any {
-        if (text) {
-            const data = JSON.parse(text).data;
-            for (const key in data) {
-                const item = data[key];
-                this.parseDates(item);
-                return data[key];
-            }
+    private getUrl() {
+        let url = GraphDao.domain;
+        if (!url.startsWith(GraphDao.protocol)) {
+            url = GraphDao.protocol;
         }
-        return undefined;
+        if (!url.endsWith("/")) {
+            url += "/";
+        }
+        url += GraphDao.path.startsWith("/") ? GraphDao.path.substring(1) : GraphDao.path;
+        return url;
+    }
+
+    private async getDataContent(response: Response) {
+        const text = await response.text(); // Parse it as text
+        if (response.status !== 200 || !text) {
+            throw new RequestError("Internal Error, bad server communication", 500);
+        }
+        const content: IResponseContent = JSON.parse(text);
+        if (content.errors && content.errors.length) {
+            throw new RequestError(content.errors[0].message, content.errors[0].statusCode);
+        }
+        return content.data;
+    }
+
+    private parseResponse(data: { [key: string]: any }): any {
+        for (const key in data) {
+            this.parseDates(data[key]);
+            return data[key];
+        }
+    }
+
+    private getToken() {
+        return localStorage.getItem(GraphDao.tokenKey);
+    }
+
+    private getHeaders() {
+        const headers: any = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        };
+        const token = this.getToken();
+        if (token) {
+            headers["x-access-token"] = token;
+        }
+        return headers;
     }
 
     private parseDates(item: any) {
@@ -62,7 +120,10 @@ export abstract class GraphDao {
 export class GraphDaoBuilder {
     private compiledQueryTemplate = Handlebars.compile(template);
     public build(endpoint: string, node: boolean = false): string {
-        const reply = this.compiledQueryTemplate({ node, endpoint });
+        const url = new Url.URL(endpoint);
+        const domain = url.hostname;
+        const path = url.pathname;
+        const reply = this.compiledQueryTemplate({ node, domain, path });
         return reply;
     }
 }

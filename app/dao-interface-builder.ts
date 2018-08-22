@@ -137,13 +137,17 @@ export class DaoInterfaceBuilder {
   }
 
   private getInputArgument(a: IArg): IDaoFnInput {
-    let tsType = this.toTsType(a.type.name || "");
+    const qlType = a.type.name || (a.type.ofType && a.type.ofType.name);
+    let tsType = this.toTsType(qlType || "");
     if (tsType.endsWith("Input")) {
       tsType = tsType.substr(0, tsType.indexOf("Input"));
     }
+    if (this.isList(a)) {
+      tsType += "[]";
+    }
     return {
       inputName: a.name,
-      qlType: a.type.name,
+      qlType: qlType,
       tsType: tsType
     } as IDaoFnInput;
   }
@@ -156,7 +160,7 @@ export class DaoInterfaceBuilder {
     if (!tsType) {
       return false;
     }
-    const primitives = ["int", "string", "boolean", "number", "float", "datetime"];
+    const primitives = ["int", "string", "boolean", "number", "float", "datetime", "void"];
     return primitives.some(p => p === tsType.toLowerCase());
   }
 
@@ -183,6 +187,8 @@ export class DaoInterfaceBuilder {
       return "any";
     } else if (this.isDate(qlType)) {
       return "Date";
+    } else if (this.isVoid(qlType)) {
+      return "void";
     } else if (this.isPrimitive(qlType)) {
       qlType = qlType.toLowerCase();
       if (qlType === "int" || qlType === "float") {
@@ -200,5 +206,9 @@ export class DaoInterfaceBuilder {
 
   private isDate(fieldName: string | undefined): boolean {
     return !!fieldName && fieldName.toLowerCase() === "datetime";
+  }
+
+  private isVoid(fieldName: string | undefined): boolean {
+    return !!fieldName && fieldName.toLowerCase() === "void";
   }
 }
