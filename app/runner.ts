@@ -35,6 +35,7 @@ const query = `{
       }
       name
         type {
+          name,
           kind,
           ofType {
             name

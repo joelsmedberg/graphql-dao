@@ -99,7 +99,13 @@ export class QueryBuilder {
     }
 
     private renderQuery(daoFn: IDaoFunction): string {
-        let input = daoFn.inputArguments.map(i => "$" + i.inputName + ": " + i.qlType).join(", ");
+        let input = daoFn.inputArguments.map(i => {
+            let type = i.qlType;
+            if (i.isList) {
+                type = "[" + type + "]";
+            }
+            return "$" + i.inputName + ": " + type;
+        }).join(", ");
         let input2 = daoFn.inputArguments.map(i => i.inputName + ": $" + i.inputName).join(", ");
         let fields = daoFn.queryFields ? this.parseTypeTree(daoFn.queryFields) : "";
         input = this.wrapIfLength(input, "(", ")");

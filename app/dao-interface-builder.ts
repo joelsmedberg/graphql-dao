@@ -147,6 +147,7 @@ export class DaoInterfaceBuilder {
     }
     return {
       inputName: a.name,
+      isList: this.isList(a),
       qlType: qlType,
       tsType: tsType
     } as IDaoFnInput;

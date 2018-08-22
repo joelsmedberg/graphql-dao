@@ -43,4 +43,5 @@ export interface IDaoFnInput {
   inputName: string;
   tsType: string;
   qlType: string;
+  isList: boolean;
 }

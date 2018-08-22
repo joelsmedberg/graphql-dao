@@ -51,7 +51,7 @@ export abstract class GraphDao {
     private getUrl() {
         let url = GraphDao.domain;
         if (!url.startsWith(GraphDao.protocol)) {
-            url = GraphDao.protocol;
+            url = GraphDao.protocol + url;
         }
         if (!url.endsWith("/")) {
             url += "/";
