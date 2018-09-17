@@ -12,7 +12,7 @@ const fnTemplate = `
     /**
      * {{description}}
      * */
-    public {{fnName}}({{input}}): Promise<{{returnType}}> {
+    public {{fnName}} = ({{input}}): Promise<{{returnType}}> => {
         const query = \`{{{query}}}\`;
         return this.post({ query, variables: { {{input2}} } });
     }`;

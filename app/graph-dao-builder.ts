@@ -2,6 +2,7 @@ import * as Handlebars from "handlebars";
 import * as Url from "url";
 const template = `// tslint:disable:max-classes-per-file
 // tslint:disable:max-line-length
+// tslint:disable:no-any
 {{#if node}}import fetch from "node-fetch";
 {{/if}}
 export interface IQlInput {
@@ -32,10 +33,18 @@ export abstract class GraphDao {
     public static path = "{{path}}";
 
     public static tokenKey = "GRAPHQL-DAO_KEY";
-    public static protocol = "https://";
+    private static protocol = "https://";
 
-    // tslint:disable-next-line:max-line-length
+    private static headerKey = "x-access-token";
+
     private static readonly REGEX = /(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d\\.\\d+([+-][0-2]\\d:[0-5]\\d|Z))|(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d([+-][0-2]\\d:[0-5]\\d|Z))|(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d([+-][0-2]\\d:[0-5]\\d|Z))/;
+
+    public constructor() {
+        this.post = this.post.bind(this);
+        this.parseDates = this.parseDates.bind(this);
+        this.parseResponse = this.parseResponse.bind(this);
+        this.getHeaders = this.getHeaders.bind(this);
+    }
 
     protected async post(body: IQlInput): Promise<any> {
         const response = await fetch(this.getUrl(), {
@@ -44,8 +53,19 @@ export abstract class GraphDao {
             headers: this.getHeaders(),
             method: "POST"
         });
+        this.saveNewKey(response);
         const contentData = await this.getDataContent(response);
-        return this.parseResponse(contentData);
+        if (contentData) {
+            return this.parseResponse(contentData);
+        }
+        return undefined;
+    }
+
+    private saveNewKey(response: Response) {
+        const respKey = response.headers.get(GraphDao.headerKey);
+        if (respKey) {
+            localStorage.setItem(GraphDao.tokenKey, respKey);
+        }
     }
 
     private getUrl() {
@@ -90,7 +110,7 @@ export abstract class GraphDao {
         };
         const token = this.getToken();
         if (token) {
-            headers["x-access-token"] = token;
+            headers[GraphDao.headerKey] = token;
         }
         return headers;
     }
