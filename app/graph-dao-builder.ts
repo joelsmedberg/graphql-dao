@@ -1,10 +1,8 @@
+// tslint:disable:max-line-length
 import * as Handlebars from "handlebars";
 import * as Url from "url";
 const template = `// tslint:disable:max-classes-per-file
-// tslint:disable:max-line-length
 // tslint:disable:no-any
-{{#if node}}import fetch from "node-fetch";
-{{/if}}
 export interface IQlInput {
     query: string;
     variables: { [key: string]: any };
@@ -22,6 +20,13 @@ interface IRequestErrorMsg {
     statusCode?: number;
 }
 
+interface IErrResp {
+    message: string;
+    code: number;
+}
+
+type IErrFn = (e: IErrResp) => Promise<any>;
+
 export class RequestError extends Error {
     constructor(message: string, public statusCode?: number) {
         super(message);
@@ -31,12 +36,11 @@ export class RequestError extends Error {
 export abstract class GraphDao {
     public static domain = "{{{domain}}}";
     public static path = "{{path}}";
+    public static errorHandlers = new Map<number, IErrFn>();
 
-    public static tokenKey = "GRAPHQL-DAO_KEY";
     private static protocol = "https://";
 
-    private static headerKey = "x-access-token";
-
+    // tslint:disable-next-line:max-line-length
     private static readonly REGEX = /(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d\\.\\d+([+-][0-2]\\d:[0-5]\\d|Z))|(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d([+-][0-2]\\d:[0-5]\\d|Z))|(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d([+-][0-2]\\d:[0-5]\\d|Z))/;
 
     public constructor() {
@@ -53,7 +57,6 @@ export abstract class GraphDao {
             headers: this.getHeaders(),
             method: "POST"
         });
-        this.saveNewKey(response);
         const contentData = await this.getDataContent(response);
         if (contentData) {
             return this.parseResponse(contentData);
@@ -61,11 +64,13 @@ export abstract class GraphDao {
         return undefined;
     }
 
-    private saveNewKey(response: Response) {
-        const respKey = response.headers.get(GraphDao.headerKey);
-        if (respKey) {
-            localStorage.setItem(GraphDao.tokenKey, respKey);
+    private errorHandler(message: string, code: number) {
+        const handler = GraphDao.errorHandlers.get(code);
+        if (handler) {
+            handler({ code, message });
+            // return undefined;
         }
+        throw new RequestError(message, code);
     }
 
     private getUrl() {
@@ -83,11 +88,11 @@ export abstract class GraphDao {
     private async getDataContent(response: Response) {
         const text = await response.text(); // Parse it as text
         if (response.status !== 200 || !text) {
-            throw new RequestError("Internal Error, bad server communication", 500);
+            return this.errorHandler("Internal Error, bad server communication", 500);
         }
         const content: IResponseContent = JSON.parse(text);
         if (content.errors && content.errors.length) {
-            throw new RequestError(content.errors[0].message, content.errors[0].statusCode);
+            return this.errorHandler(content.errors[0].message, content.errors[0].statusCode || 0);
         }
         return content.data;
     }
@@ -99,24 +104,14 @@ export abstract class GraphDao {
         }
     }
 
-    private getToken() {
-        return localStorage.getItem(GraphDao.tokenKey);
-    }
-
     private getHeaders() {
-        const headers: any = {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
+        return {
+            Accept: "application/json"
         };
-        const token = this.getToken();
-        if (token) {
-            headers[GraphDao.headerKey] = token;
-        }
-        return headers;
     }
 
     private parseDates(item: any) {
-        if (!item) {
+        if (!item || typeof item === "string") {
             return;
         }
         for (const key in item) {

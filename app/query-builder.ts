@@ -89,12 +89,15 @@ export class QueryBuilder {
         const ps = node.primitives.join("\n ");
         const strNodes = node.nodes.map(n => {
             let internal = this.parseTypeTree(n);
-            if (internal) {
+            if (internal && (n.nodes.length || n.primitives.length)) {
                 internal = n.name + this.wrapIfLength(internal, " { ", " } ");
             }
             return internal;
         });
-        const output = strNodes.join(" ");
+        let output = strNodes.join(" ");
+        if (!node.nodes.length && !node.primitives.length && !output.trim().length) {
+            output = ` ${node.name} `;
+        }
         return (ps + " " + output).trim();
     }
 
