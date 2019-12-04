@@ -6,6 +6,7 @@ import { GraphDaoBuilder } from "./graph-dao-builder";
 import { QueryBuilder } from "./query-builder";
 import { ISchema, ISchemaReply } from "./schema-reply";
 import { TypeBuilder } from "./type-builder";
+import { EnumBuilder } from "./enum-builder";
 const query = `{
   __schema {
     queryType {
@@ -15,16 +16,23 @@ const query = `{
       ...comparisonFields
     }
     types {
-    name
-    inputFields {
-      type{
+      kind
+      enumValues {
         name
-        kind
-        ofType {
-          name
-        }
       }
       name
+      inputFields {
+        type{
+          name
+          kind
+          enumValues{
+            name
+          }
+          ofType {
+            name
+          }
+        }
+        name
     }
     fields {
       type {
@@ -95,12 +103,16 @@ export class Runner {
   }
 
   private toDao(schema: ISchema) {
-    const daoInterfaceBuilder = new DaoInterfaceBuilder();
-    const formattedSchema = daoInterfaceBuilder.render(schema);
-    const qBuiler = new QueryBuilder();
     if (!existsSync(this.outputFolder)) {
       mkdirSync(this.outputFolder);
     }
+
+    const enumBuilder = new EnumBuilder(schema);
+    enumBuilder.render(this.outputFolder);
+    const daoInterfaceBuilder = new DaoInterfaceBuilder();
+    const formattedSchema = daoInterfaceBuilder.render(schema);
+
+    const qBuiler = new QueryBuilder();
     for (const key in formattedSchema.classes) {
       const c = formattedSchema.classes[key];
       const filename = changeCase.paramCase(c.className) + "-dao.generated.ts";

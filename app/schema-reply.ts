@@ -16,6 +16,8 @@ export interface ISchema {
 
 export interface IType {
   name: string;
+  kind: KIND | null,
+  enumValues: null | { name: string}[];
   fields: null | undefined | ITypeField[];
   inputFields: null | undefined | ITypeField[];
 }
@@ -23,7 +25,7 @@ export interface IType {
 export interface ITypeField {
   name: string;
   type: {
-    kind: string |  undefined;
+    kind: KIND | null | undefined;
     ofType: INameDesc | undefined;
     name: string | undefined;
   };
@@ -36,7 +38,8 @@ export interface INameDesc {
 
 export interface IFieldReturnType {
   name: string | undefined | null;
-  kind: string;
+  kind: KIND | null | undefined;
+  enumValues: null | { name: string}[];
   ofType: undefined | {
     name: string;
   };
@@ -50,8 +53,10 @@ export interface IField extends INameDesc {
 export interface IArg extends INameDesc {
   defaultValue?: string | undefined | null;
   type: {
-    kind: string |  undefined;
+    kind: KIND | null | undefined;
     ofType: INameDesc | undefined;
     name: string | undefined;
   };
 }
+
+export type KIND = "OBJECT" | "LIST" | "SCALAR" | "OBJECT" | "INPUT_OBJECT" | "ENUM"

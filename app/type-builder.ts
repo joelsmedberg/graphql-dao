@@ -24,6 +24,8 @@ export class TypeBuilder {
     for (const t of schema.types) {
       if (this.isSystemType(t.name)) {
         continue;
+      } else if (t.kind === "ENUM") {
+        continue;
       }
       const strOutput = this.buildClass(t);
       if (strOutput) {
@@ -60,16 +62,20 @@ export class TypeBuilder {
     let input = f.type.name || (f.type.ofType && f.type.ofType.name) || "";
     input = this.stripInputType(input);
     let fileName = this.toTsFileName(input);
-    const className = this.strToTsType(input);
+    const className = this.strToTsType(input, f);
     if (fileName && className) {
       fileName = fileName.endsWith(".ts") ? fileName.substr(0, fileName.length - 3) : fileName;
-      return `import { ${className} } from "./${fileName}";`;
+      let path = "./";
+      if (f.type.kind === "ENUM") {
+        path += "../enums/";
+      }
+      return `import { ${className} } from "${path}${fileName}";`;
     }
     return "";
   }
 
   private buildClass(t: IType): string {
-    const className = this.strToTsType(t.name);
+    const className = this.strToTsType(t.name, t);
     const fields = this.getAllFields(t);
     const str = fields.map(f => this.buildField(f));
     if (str) {
@@ -136,10 +142,11 @@ export class TypeBuilder {
     return !!qlType && (qlType.toLowerCase() === "void");
   }
 
-  private strToTsType(qlType: string | undefined): string {
+  private strToTsType(qlType: string | undefined, type: ITypeField | IType): string {
     if (!qlType) {
       return "any";
     }
+    const kind = "type" in type ? type.type.kind : type.kind;
     let tsType = "any";
     if (this.isDate(qlType)) {
       tsType = "Date";
@@ -147,6 +154,8 @@ export class TypeBuilder {
       tsType = "void";
     } else if (this.isPrimitive(qlType)) {
       tsType = qlType.toLowerCase();
+    } else if (kind === "ENUM") {
+      tsType = qlType;
     } else {
       tsType = "I" + qlType;
     }
@@ -160,9 +169,9 @@ export class TypeBuilder {
       return "any";
     }
     if (field.type.name) {
-      return this.strToTsType(field.type.name);
+      return this.strToTsType(field.type.name, field);
     } else if (field.type.kind === "LIST" && field.type.ofType) {
-      return this.strToTsType(field.type.ofType.name) + "[]";
+      return this.strToTsType(field.type.ofType.name, field) + "[]";
     }
     return "any";
   }

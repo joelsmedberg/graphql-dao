@@ -1,6 +1,6 @@
 {
   "name": "graphql-dao-builder",
-  "version": "1.1.31",
+  "version": "1.2.1",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -25,10 +25,11 @@
   "author": "Joel Smedberg",
   "license": "ISC",
   "dependencies": {
+    "change-case": "^4.0.1",
     "commander": "^2.15.1",
+    "handlebars": "^4.5.3",
     "request": "^2.87.0",
-    "request-promise-native": "^1.0.5",
-    "typescript-mysql-model": "^1.2.18"
+    "request-promise-native": "^1.0.8"
   },
   "devDependencies": {
     "@types/commander": "^2.12.2",
