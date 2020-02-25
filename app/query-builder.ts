@@ -72,9 +72,11 @@ export class QueryBuilder {
 
     private makeImport(daoClass: IDaoClassDescription): string[] {
         return daoClass.imports.map(imp => {
-            const param = changeCase.paramCase(imp);
-            const t = `import { I${imp} } from "./interfaces/${param}.generated"; `;
-            return t;
+            const param = changeCase.paramCase(imp.name);
+            if (imp.isEnum) {
+                return `import { ${imp.name} } from "./enums/${param}.generated"; `;
+            }
+            return `import { I${imp.name} } from "./interfaces/${param}.generated"; `;
         });
     }
 

@@ -11,9 +11,14 @@ export interface IQlType {
   [fieldName: string]: string;
 }
 
+export interface IReference {
+  name: string;
+  isEnum: boolean;
+}
+
 export interface IDaoClassDescription {
   className: string;
-  imports: string[];
+  imports: IReference[];
   fns: IDaoFunction[];
 }
 
@@ -21,8 +26,8 @@ export interface IDaoFunction {
   mutation: boolean;
   fnName: string;
   className: string;
-  references: string[];
-  queryFields: ITypeTreeNode | undefined;
+  references: IReference[];
+  queryFields: ITypeTreeNode | undefined;
   tsReturnType: string;
   description?: string;
   inputArguments: IDaoFnInput[];
@@ -34,6 +39,7 @@ export interface ITreeDictionary {
 
 export interface ITypeTreeNode {
   primitives: string[];
+  isEnum: boolean;
   name: string | undefined;
   type: string | undefined;
   nodes: ITypeTreeNode[];
@@ -44,4 +50,5 @@ export interface IDaoFnInput {
   tsType: string;
   qlType: string;
   isList: boolean;
+  isEnum: boolean;
 }
