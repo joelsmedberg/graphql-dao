@@ -1,10 +1,10 @@
 // tslint:disable-next-line:max-line-length
-import { IDaoBuildInterface, IDaoClassDescription, IDaoFnInput, IDaoFunction, IReference, ITreeDictionary, ITypeTreeNode } from "./dao-build-interface";
-import { IArg, IField, ISchema, IType } from "./schema-fetcher/schema-reply";
+import { IDaoBuildInterface, IDaoClassDescription, IDaoFnInput, IDaoFunction, ITreeDictionary, ITypeTreeNode } from "./dao-build-interface";
+import { IArg, IField, ISchema, IType } from "./schema-reply";
 
 const MAX_DEPTH = 5;
 export class DaoInterfaceBuilder {
-  private readonly DEFAULT_NODE = { type: undefined, isEnum: false, name: undefined, primitives: [], nodes: [] };
+  private readonly DEFAULT_NODE = { type: undefined, name: undefined, primitives: [], nodes: [] };
   public render(reply: ISchema): IDaoBuildInterface {
     const fieldTypes = this.renderFieldTypeMap(reply);
     const fns = [
@@ -34,38 +34,28 @@ export class DaoInterfaceBuilder {
   }
 
   private renderReferences(dao: IDaoClassDescription) {
-    let references: IReference[] = [];
+    let references: string[] = [];
     dao.fns.forEach(fns => {
       references.push(...fns.references);
     });
     references = references.map(r => this.stripInputType(r));
-    references = references.filter(r => !this.isPrimitive(r.name));
-    references = this.unique(references);
+    references = references.filter(r => !this.isPrimitive(r));
+    references = references.filter((item, pos, self) => self.indexOf(item) === pos);
     dao.imports = references;
   }
 
-  private unique<T>(list: T[]): T[] {
-    if (!list.length) {
-      return [];
-    }
-    const strList = list.map(item => JSON.stringify(item));
-    const uniqueStr = [...new Set(strList)];
-    return uniqueStr.map(s => JSON.parse(s));
-  }
-
-  private stripInputType(ref: IReference): IReference {
+  private stripInputType(name: string): string {
     const STRIP = "Input";
-    if (ref.name.endsWith(STRIP)) {
-      ref.name = ref.name.substr(0, ref.name.length - STRIP.length);
+    if (name.endsWith(STRIP)) {
+      name = name.substr(0, name.length - STRIP.length);
     }
-    return ref;
+    return name;
   }
 
   private renderFieldTypeMap(schema: ISchema): ITreeDictionary {
     return schema.types.reduce((prev, cur) => {
       if (!this.isSystemType(cur.name)) {
         prev[cur.name] = {
-          isEnum: cur.kind === "ENUM",
           name: undefined,
           nodes: [],
           primitives: [],
@@ -114,7 +104,6 @@ export class DaoInterfaceBuilder {
       return this.DEFAULT_NODE;
     });
     const node: ITypeTreeNode = {
-      isEnum: t.kind === "ENUM",
       name: name,
       nodes: nodes,
       primitives: primitives.map(p => p.name),
@@ -134,7 +123,7 @@ export class DaoInterfaceBuilder {
   private fieldToFunction(field: IField, fieldTypes: ITreeDictionary, mutation: boolean): IDaoFunction {
     const references = [this.getBaseReturnType(field)];
     references.push(...field.args.map(a => this.getBaseReturnType(a)));
-    const queryFields = fieldTypes[this.getBaseReturnType(field).name];
+    const queryFields = fieldTypes[this.getBaseReturnType(field)];
     return {
       className: this.getClassName(field.name),
       description: field.description,
@@ -149,8 +138,7 @@ export class DaoInterfaceBuilder {
 
   private getInputArgument(a: IArg): IDaoFnInput {
     const qlType = a.type.name || (a.type.ofType && a.type.ofType.name);
-    const isEnum = a.type.kind === "ENUM" || a.type.ofType?.kind === "ENUM";
-    let tsType = this.toTsType(qlType || "", isEnum);
+    let tsType = this.toTsType(qlType || "");
     if (tsType.endsWith("Input")) {
       tsType = tsType.substr(0, tsType.indexOf("Input"));
     }
@@ -159,7 +147,6 @@ export class DaoInterfaceBuilder {
     }
     return {
       inputName: a.name,
-      isEnum,
       isList: this.isList(a),
       qlType: qlType,
       tsType: tsType
@@ -178,35 +165,25 @@ export class DaoInterfaceBuilder {
     return primitives.some(p => p === tsType.toLowerCase());
   }
 
-  private getBaseReturnType(field: IField | IArg): IReference {
+  private getBaseReturnType(field: IField | IArg): string {
     if (field.type.name) {
-      return {
-        isEnum: field.type.kind === "ENUM",
-        name: field.type.name
-      };
+      return field.type.name;
     } else if (this.isList(field) && field.type.ofType) {
-      return {
-        isEnum: field.type.ofType.kind === "ENUM",
-        name: field.type.ofType.name
-      };
+      return field.type.ofType.name;
     }
-    return {
-      isEnum: false,
-      name: "any"
-    };
+    return "any";
   }
 
   private field2ts(field: IField | IArg): string {
-    let fieldName = this.getBaseReturnType(field).name;
-    const isEnum = field.type.kind === "ENUM" || field.type.ofType?.kind === "ENUM";
-    fieldName = this.toTsType(fieldName, isEnum);
+    let fieldName = this.getBaseReturnType(field);
+    fieldName = this.toTsType(fieldName);
     if (this.isList(field)) {
       fieldName += "[]";
     }
     return fieldName;
   }
 
-  private toTsType(qlType: string, isEnum: boolean): string {
+  private toTsType(qlType: string): string {
     if (!qlType) {
       return "any";
     } else if (this.isDate(qlType)) {
@@ -220,7 +197,7 @@ export class DaoInterfaceBuilder {
       }
       return qlType;
     } else {
-      return (!isEnum ? "I" : "") + qlType;
+      return "I" + qlType;
     }
   }
 

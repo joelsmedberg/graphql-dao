@@ -13,5 +13,5 @@ try {
   console.log(error);
 }
 
-const runner = new Runner(program.output, program.node);
-runner.run(program.host).then(() => process.exit(0));
+const runner = new Runner(program.host, program.output, program.node);
+runner.run().then(() => process.exit(0));
