@@ -8,6 +8,7 @@ node_modules/
 # Typescript v1 declaration files
 typings/
 
+output/
 # Optional npm cache directory
 .npm
 

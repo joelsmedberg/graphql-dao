@@ -1,7 +1,7 @@
 // tslint:disable-next-line:max-line-length
 import { IDaoBuildInterface, IDaoClassDescription, IDaoFnInput, IDaoFunction, ITreeDictionary, ITypeTreeNode } from "./dao-build-interface";
-import { IArg, IField, ISchema, IType } from "./schema-fetcher/schema-reply";
 import { getKind } from "./schema-fetcher/schema-helpers";
+import { IArg, IField, ISchema, IType } from "./schema-fetcher/schema-reply";
 
 const MAX_DEPTH = 5;
 export class DaoInterfaceBuilder {

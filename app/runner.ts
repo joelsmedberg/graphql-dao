@@ -4,9 +4,9 @@ import { DaoInterfaceBuilder } from "./dao-interface-builder";
 import { GraphDaoBuilder } from "./graph-dao-builder";
 import { QueryBuilder } from "./query-builder";
 import { EnumBuilder } from "./schema-fetcher/enum-builder";
-import { InterfaceBuilder } from "./schema-fetcher/interface-builder";
 import { ISchema } from "./schema-fetcher/schema-reply";
 import { ServerSchemaFetcher } from "./schema-fetcher/server-schema-fetcher";
+import { TypeBuilder } from "./type-builder";
 
 export class Runner {
   private outputFolder: string;
@@ -32,8 +32,8 @@ export class Runner {
     const enumBuilder = new EnumBuilder(schema);
     enumBuilder.render(this.outputFolder);
 
-    const interfaceBuilder = new InterfaceBuilder(schema);
-    interfaceBuilder.render(this.outputFolder);
+    // const interfaceBuilder = new InterfaceBuilder(schema);
+    // interfaceBuilder.render(this.outputFolder);
 
     // Generate interfaces
     const daoInterfaceBuilder = new DaoInterfaceBuilder(schema);
@@ -47,5 +47,7 @@ export class Runner {
     }
     const strDao = new GraphDaoBuilder().build(endpoint, this.isNode);
     writeFileSync(this.outputFolder + "graph-dao.ts", strDao);
+
+    new TypeBuilder(this.outputFolder).run(schema);
   }
 }
