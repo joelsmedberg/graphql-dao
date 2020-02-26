@@ -1,125 +1,51 @@
 import * as changeCase from "change-case";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
-import * as Request from "request-promise-native";
 import { DaoInterfaceBuilder } from "./dao-interface-builder";
 import { GraphDaoBuilder } from "./graph-dao-builder";
 import { QueryBuilder } from "./query-builder";
-import { ISchema, ISchemaReply } from "./schema-reply";
-import { TypeBuilder } from "./type-builder";
-import { EnumBuilder } from "./enum-builder";
-const query = `{
-  __schema {
-    queryType {
-      ...comparisonFields
-    }
-    mutationType {
-      ...comparisonFields
-    }
-    types {
-      kind
-      enumValues {
-        name
-      }
-      name
-      inputFields {
-        type{
-          name
-          kind
-          enumValues{
-            name
-          }
-          ofType {
-            name
-          }
-        }
-        name
-    }
-    fields {
-      type {
-        kind
-        ofType {
-          name
-        }
-      }
-      name
-        type {
-          name,
-          kind,
-          ofType {
-            name
-          }
-        }
-      }
-    }
-  }
-}
-
-fragment comparisonFields on __Type {
-  fields{
-    name,
-    description,
-    type {
-      name,
-      kind,
-      ofType {
-      	name
-      }
-    },
-    args {
-      description defaultValue,
-        type {
-          name,
-          kind,
-          ofType {
-            name
-          }}
-      name
-    }
-	}
-}`;
+import { EnumBuilder } from "./schema-fetcher/enum-builder";
+import { InterfaceBuilder } from "./schema-fetcher/interface-builder";
+import { ISchema } from "./schema-fetcher/schema-reply";
+import { ServerSchemaFetcher } from "./schema-fetcher/server-schema-fetcher";
 
 export class Runner {
   private outputFolder: string;
-  constructor(private endpoint: string, output: string = "./", private isNode: boolean = false) {
+  constructor(output: string = "./", private isNode: boolean) {
     if (!output.endsWith("/")) {
       output = output + "/";
     }
     this.outputFolder = output;
   }
-  // private readonly ENDPOINT = "http://localhost:8081/graphql";
-  // private readonly ENDPOINT = "https://backend-dev.mittskolval.se/graphql";
 
-  public async run() {
-    const data = { query: query, variables: null, operationName: null };
-    const reply = await Request(this.endpoint, {
-      body: JSON.stringify(data),
-      headers: {
-        "content-type": "application/json"
-      },
-      method: "POST"
-    });
-    const parsed: ISchemaReply = JSON.parse(reply);
-    return this.toDao(parsed.data.__schema);
+  public async run(endpoint: string) {
+    // Load the ql schema frorm the server
+    const schema = await ServerSchemaFetcher.fetchSchema(endpoint);
+    // Use downloaded schema to generate interfaces
+    return this.renderDao(schema.data.__schema, endpoint);
   }
 
-  private toDao(schema: ISchema) {
+  private renderDao(schema: ISchema, endpoint: string) {
     if (!existsSync(this.outputFolder)) {
       mkdirSync(this.outputFolder);
     }
-
+    // Generate enums
     const enumBuilder = new EnumBuilder(schema);
     enumBuilder.render(this.outputFolder);
-    const daoInterfaceBuilder = new DaoInterfaceBuilder();
-    const formattedSchema = daoInterfaceBuilder.render(schema);
+
+    const interfaceBuilder = new InterfaceBuilder(schema);
+    interfaceBuilder.render(this.outputFolder);
+
+    // Generate interfaces
+    const daoInterfaceBuilder = new DaoInterfaceBuilder(schema);
+    const formattedSchema = daoInterfaceBuilder.render();
 
     const qBuiler = new QueryBuilder();
     for (const key in formattedSchema.classes) {
       const c = formattedSchema.classes[key];
       const filename = changeCase.paramCase(c.className) + "-dao.generated.ts";
-      writeFileSync(this.outputFolder + filename, qBuiler.renderClass(c));
+      writeFileSync(this.outputFolder + filename, qBuiler.renderClass(c, schema));
     }
-    const strDao = new GraphDaoBuilder().build(this.endpoint, this.isNode);
+    const strDao = new GraphDaoBuilder().build(endpoint, this.isNode);
     writeFileSync(this.outputFolder + "graph-dao.ts", strDao);
-    new TypeBuilder(this.outputFolder).run(schema);
   }
 }

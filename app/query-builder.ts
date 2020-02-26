@@ -1,7 +1,9 @@
 import * as changeCase from "change-case";
 import * as Handlebars from "handlebars";
-
 import { IDaoClassDescription, IDaoFunction, ITypeTreeNode } from "./dao-build-interface";
+import { getKind } from "./schema-fetcher/schema-helpers";
+import { ISchema } from "./schema-fetcher/schema-reply";
+
 // tslint:disable-next-line:max-line-length
 const queryTemplate = `{{query}} {{namespace}}_{{fnName}}{{input}} {
     {{namespace}}_{{fnName}}{{input2}}
@@ -47,10 +49,10 @@ export class QueryBuilder {
     private compiledFnTemplate = Handlebars.compile(fnTemplate);
     private classTemplate = Handlebars.compile(classTemplate);
 
-    public renderClass(arg: IDaoClassDescription): string {
+    public renderClass(arg: IDaoClassDescription, schema: ISchema): string {
         const fns = arg.fns.map(fn => this.renderFunction(fn));
         const proper = changeCase.pascalCase(arg.className);
-        const t = this.classTemplate({ className: proper, fns, imports: this.makeImport(arg) });
+        const t = this.classTemplate({ className: proper, fns, imports: this.makeImport(arg, schema) });
         return t;
     }
 
@@ -70,10 +72,13 @@ export class QueryBuilder {
         return t;
     }
 
-    private makeImport(daoClass: IDaoClassDescription): string[] {
+    private makeImport(daoClass: IDaoClassDescription, schema: ISchema): string[] {
         return daoClass.imports.map(imp => {
             const param = changeCase.paramCase(imp);
-            const t = `import { I${imp} } from "./interfaces/${param}.generated"; `;
+            const isEnum = getKind(imp, schema) === "ENUM";
+            const prefix = isEnum ? "" : "I";
+            const folder = isEnum ? "enums" : "interfaces";
+            const t = `import { ${prefix}${imp} } from "./${folder}/${param}.generated"; `;
             return t;
         });
     }

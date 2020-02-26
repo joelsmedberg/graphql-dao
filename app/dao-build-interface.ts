@@ -28,6 +28,8 @@ export interface IDaoFunction {
   inputArguments: IDaoFnInput[];
 }
 
+export type Dict<T = any> = {[key: string]: T};
+
 export interface ITreeDictionary {
   [key: string]: ITypeTreeNode;
 }

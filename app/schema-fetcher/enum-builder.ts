@@ -1,6 +1,6 @@
-import { ISchema } from "./schema-reply";
-import * as fs from "fs";
 import * as change_case from "change-case";
+import * as fs from "fs";
+import { ISchema } from "./schema-reply";
 
 export class EnumBuilder {
   public constructor(private schema: ISchema) {
@@ -8,17 +8,17 @@ export class EnumBuilder {
   }
 
   public render(outputFolder: string) {
-    const enums = this.schema.types.filter(t => t.kind=== "ENUM");
+    const enums = this.schema.types.filter(t => t.kind === "ENUM");
     enums.forEach(e => {
-      const strContent = this.toTypescriptEnum(e.name, e.enumValues!.map(v => v.name));
+      const strContent = this.toTypescriptEnum(e.name!, e.enumValues!.map(v => v.name));
       if (!outputFolder.endsWith("/")) {
-        outputFolder + "/";
+        outputFolder += "/";
       }
       const path = outputFolder + "enums/";
       if (!fs.existsSync(path)) {
         fs.mkdirSync(path);
       }
-      const filename = change_case.paramCase(e.name) + ".generated.ts";
+      const filename = change_case.paramCase(e.name!) + ".generated.ts";
       fs.writeFileSync(path + filename, strContent);
     });
   }
@@ -28,6 +28,6 @@ export class EnumBuilder {
     const template = `export enum ${name} {
 ${rows}
 }`;
-    return template
+    return template;
   }
 }

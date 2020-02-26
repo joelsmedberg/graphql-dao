@@ -1,15 +1,19 @@
 // tslint:disable-next-line:max-line-length
 import { IDaoBuildInterface, IDaoClassDescription, IDaoFnInput, IDaoFunction, ITreeDictionary, ITypeTreeNode } from "./dao-build-interface";
-import { IArg, IField, ISchema, IType } from "./schema-reply";
+import { IArg, IField, ISchema, IType } from "./schema-fetcher/schema-reply";
+import { getKind } from "./schema-fetcher/schema-helpers";
 
 const MAX_DEPTH = 5;
 export class DaoInterfaceBuilder {
+  public constructor(private schema: ISchema) {
+
+  }
   private readonly DEFAULT_NODE = { type: undefined, name: undefined, primitives: [], nodes: [] };
-  public render(reply: ISchema): IDaoBuildInterface {
-    const fieldTypes = this.renderFieldTypeMap(reply);
+  public render(): IDaoBuildInterface {
+    const fieldTypes = this.renderFieldTypeMap(this.schema);
     const fns = [
-      ...reply.queryType.fields.map(f => this.fieldToFunction(f, fieldTypes, false)),
-      ...reply.mutationType.fields.map(f => this.fieldToFunction(f, fieldTypes, true))
+      ...this.schema.queryType.fields.map(f => this.fieldToFunction(f, fieldTypes, false)),
+      ...this.schema.mutationType.fields.map(f => this.fieldToFunction(f, fieldTypes, true))
     ];
     const classNames = fns.map(fn => fn.className).filter((item, pos, self) => {
       return self.indexOf(item) === pos;
@@ -54,32 +58,23 @@ export class DaoInterfaceBuilder {
 
   private renderFieldTypeMap(schema: ISchema): ITreeDictionary {
     return schema.types.reduce((prev, cur) => {
-      if (!this.isSystemType(cur.name)) {
-        prev[cur.name] = {
+      if (!this.isSystemType(cur.name!)) {
+        prev[cur.name!] = {
           name: undefined,
           nodes: [],
           primitives: [],
           type: undefined
         } as ITypeTreeNode;
         if (cur.fields) {
-          prev[cur.name] = this.buildTypeTree(cur, schema, undefined, 0);
+          prev[cur.name!] = this.buildTypeTree(cur, schema, undefined, 0);
         }
       }
       return prev;
     }, {} as any);
   }
 
-  private isSystemType(name: string) {
-    if (name === "Query") {
-      return true;
-    } else if (name === "Mutation") {
-      return true;
-    } else if (this.isPrimitive(name)) {
-      return true;
-    } else if (name.startsWith("__")) {
-      return true;
-    }
-    return false;
+  private isSystemType(name: string): boolean {
+    return name.startsWith("__") || name === "Query" || name === "Mutation";
   }
 
   private getTypeFromSchema(schema: ISchema, name: string | undefined): IType | undefined {
@@ -107,7 +102,7 @@ export class DaoInterfaceBuilder {
       name: name,
       nodes: nodes,
       primitives: primitives.map(p => p.name),
-      type: t.name
+      type: t.name!
     };
     return node;
   }
@@ -125,9 +120,9 @@ export class DaoInterfaceBuilder {
     references.push(...field.args.map(a => this.getBaseReturnType(a)));
     const queryFields = fieldTypes[this.getBaseReturnType(field)];
     return {
-      className: this.getClassName(field.name),
+      className: this.getClassName(field.name!),
       description: field.description,
-      fnName: this.getFnName(field.name),
+      fnName: this.getFnName(field.name!),
       inputArguments: field.args.map(a => this.getInputArgument(a)),
       mutation: mutation,
       queryFields: queryFields,
@@ -139,6 +134,9 @@ export class DaoInterfaceBuilder {
   private getInputArgument(a: IArg): IDaoFnInput {
     const qlType = a.type.name || (a.type.ofType && a.type.ofType.name);
     let tsType = this.toTsType(qlType || "");
+    if (getKind(qlType!, this.schema) === "ENUM") {
+      tsType = qlType!;
+    }
     if (tsType.endsWith("Input")) {
       tsType = tsType.substr(0, tsType.indexOf("Input"));
     }
@@ -153,10 +151,6 @@ export class DaoInterfaceBuilder {
     } as IDaoFnInput;
   }
 
-  // private isObjectType(field: IField) {
-  //   return !this.isPrimitive(this.getBaseReturnType(field));
-  // }
-
   private isPrimitive(tsType: string | undefined): boolean {
     if (!tsType) {
       return false;
@@ -169,7 +163,7 @@ export class DaoInterfaceBuilder {
     if (field.type.name) {
       return field.type.name;
     } else if (this.isList(field) && field.type.ofType) {
-      return field.type.ofType.name;
+      return field.type.ofType.name!;
     }
     return "any";
   }
@@ -198,6 +192,8 @@ export class DaoInterfaceBuilder {
       return qlType;
     } else {
       return "I" + qlType;
+      // const isEnum = getKind(qlType, this.schema) === "ENUM";
+      // return (isEnum ? "" : "I") + qlType;
     }
   }
 
