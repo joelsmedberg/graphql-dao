@@ -1,5 +1,0 @@
-export enum TEMPLATE_MEDIUM {
-	EMAIL = "EMAIL",
-	LETTER = "LETTER",
-	SMS = "SMS"
-}

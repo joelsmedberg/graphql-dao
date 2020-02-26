@@ -1,4 +1,0 @@
-export enum SYSTEM {
-	FRONTEND = "FRONTEND",
-	ADMIN = "ADMIN"
-}
