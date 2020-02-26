@@ -50,15 +50,22 @@ export class QueryBuilder {
     private classTemplate = Handlebars.compile(classTemplate);
 
     public renderClass(arg: IDaoClassDescription, schema: ISchema): string {
-        const fns = arg.fns.map(fn => this.renderFunction(fn));
+        const fns = arg.fns.map(fn => this.renderFunction(fn, schema));
         const proper = changeCase.pascalCase(arg.className);
         const t = this.classTemplate({ className: proper, fns, imports: this.makeImport(arg, schema) });
         return t;
     }
 
-    private renderFunction(daoFn: IDaoFunction): string {
-        const input = daoFn.inputArguments.map(i => i.inputName + ": " + i.tsType).join(", ");
-        const input2 = daoFn.inputArguments.map(i => i.inputName + ": " + i.inputName);
+    private renderFunction(daoFn: IDaoFunction, schema: ISchema): string {
+        const input = daoFn.inputArguments.map(i => {
+            if (getKind(i.qlType, schema) === "ENUM") {
+                return i.inputName + ": " + (i.isList ? "[]" : "");
+            }
+            return i.inputName + ": " + i.tsType;
+        }).join(", ");
+        const input2 = daoFn.inputArguments.map(i => {
+            return i.inputName + ": " + i.inputName;
+        });
         const query = this.renderQuery(daoFn);
         const t = this.compiledFnTemplate({
             description: daoFn.description,

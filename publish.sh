@@ -1,4 +1,5 @@
 rm -rf ./build
+rm -rf ./output
 tsc
 # node inc-version.js
 cp package.json build/package.json
