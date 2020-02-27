@@ -4,15 +4,12 @@ import { IArg, IField, ISchema, IType } from "./schema-fetcher/schema-reply";
 
 const MAX_DEPTH = 5;
 export class DaoInterfaceBuilder {
-  public constructor(private schema: ISchema) {
-
-  }
   private readonly DEFAULT_NODE = { type: undefined, name: undefined, primitives: [], nodes: [] };
-  public render(): IDaoBuildInterface {
-    const fieldTypes = this.renderFieldTypeMap(this.schema);
+  public render(reply: ISchema): IDaoBuildInterface {
+    const fieldTypes = this.renderFieldTypeMap(reply);
     const fns = [
-      ...this.schema.queryType.fields.map(f => this.fieldToFunction(f, fieldTypes, false)),
-      ...this.schema.mutationType.fields.map(f => this.fieldToFunction(f, fieldTypes, true))
+      ...reply.queryType.fields.map(f => this.fieldToFunction(f, fieldTypes, false)),
+      ...reply.mutationType.fields.map(f => this.fieldToFunction(f, fieldTypes, true))
     ];
     const classNames = fns.map(fn => fn.className).filter((item, pos, self) => {
       return self.indexOf(item) === pos;
@@ -72,8 +69,17 @@ export class DaoInterfaceBuilder {
     }, {} as any);
   }
 
-  private isSystemType(name: string): boolean {
-    return name.startsWith("__") || name === "Query" || name === "Mutation";
+  private isSystemType(name: string) {
+    if (name === "Query") {
+      return true;
+    } else if (name === "Mutation") {
+      return true;
+    } else if (this.isPrimitive(name)) {
+      return true;
+    } else if (name.startsWith("__")) {
+      return true;
+    }
+    return false;
   }
 
   private getTypeFromSchema(schema: ISchema, name: string | undefined): IType | undefined {
@@ -147,6 +153,10 @@ export class DaoInterfaceBuilder {
     } as IDaoFnInput;
   }
 
+  // private isObjectType(field: IField) {
+  //   return !this.isPrimitive(this.getBaseReturnType(field));
+  // }
+
   private isPrimitive(tsType: string | undefined): boolean {
     if (!tsType) {
       return false;
@@ -188,8 +198,6 @@ export class DaoInterfaceBuilder {
       return qlType;
     } else {
       return "I" + qlType;
-      // const isEnum = getKind(qlType, this.schema) === "ENUM";
-      // return (isEnum ? "" : "I") + qlType;
     }
   }
 

@@ -36,8 +36,8 @@ export class Runner {
     // interfaceBuilder.render(this.outputFolder);
 
     // Generate interfaces
-    const daoInterfaceBuilder = new DaoInterfaceBuilder(schema);
-    const formattedSchema = daoInterfaceBuilder.render();
+    const daoInterfaceBuilder = new DaoInterfaceBuilder();
+    const formattedSchema = daoInterfaceBuilder.render(schema);
 
     const qBuiler = new QueryBuilder();
     for (const key in formattedSchema.classes) {
@@ -46,7 +46,7 @@ export class Runner {
       writeFileSync(this.outputFolder + filename, qBuiler.renderClass(c, schema));
     }
     const strDao = new GraphDaoBuilder().build(endpoint, this.isNode);
-    writeFileSync(this.outputFolder + "graph-dao.ts", strDao);
+    writeFileSync(this.outputFolder + "graph-dao.generated.ts", strDao);
 
     new TypeBuilder(this.outputFolder).run(schema);
   }

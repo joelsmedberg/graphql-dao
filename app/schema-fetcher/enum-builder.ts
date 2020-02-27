@@ -3,6 +3,24 @@ import * as fs from "fs";
 import { ISchema } from "./schema-reply";
 
 export class EnumBuilder {
+  private static graphqlCompliantToValue(text: string) {
+    if (!text) {
+      return text;
+    }
+    const translations: { [key: string]: string } = {
+      AO__: "Å",
+      AE__: "Ä",
+      OE__: "Ö"
+    };
+    Object.keys(translations).forEach((key: string) => {
+      const value = translations[key];
+      while (text.indexOf(key) !== -1) {
+        text = text.replace(key, value);
+      }
+    });
+    return text;
+  }
+
   public constructor(private schema: ISchema) {
 
   }
@@ -23,8 +41,13 @@ export class EnumBuilder {
     });
   }
 
+  private toRow(value: string): string {
+    value = EnumBuilder.graphqlCompliantToValue(value);
+    return `\t${value} = "${value}"`;
+  }
+
   private toTypescriptEnum(name: string, values: string[]) {
-    const rows = values.map(value => `\t${value} = "${value}"`).join(",\n");
+    const rows = values.map(value => this.toRow(value)).join(",\n");
     const template = `export enum ${name} {
 ${rows}
 }`;

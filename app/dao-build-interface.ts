@@ -22,13 +22,12 @@ export interface IDaoFunction {
   fnName: string;
   className: string;
   references: string[];
-  queryFields: ITypeTreeNode | undefined;
+  queryFields: ITypeTreeNode | undefined;
   tsReturnType: string;
   description?: string;
   inputArguments: IDaoFnInput[];
 }
-
-export type Dict<T = any> = {[key: string]: T};
+export type Dict<T = any> = { [key: string]: T };
 
 export interface ITreeDictionary {
   [key: string]: ITypeTreeNode;
