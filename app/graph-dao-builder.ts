@@ -40,6 +40,7 @@ export abstract class GraphDao {
  public static domain = "{{{domain}}}";
  public static path = "{{path}}";
  public static errorHandlers = new Map<number, IErrFn>();
+ public static headerHookFn: undefined | ((dict: {[key: string]: string}) => void);
 
  private static protocol = "https://";
 
@@ -55,10 +56,14 @@ export abstract class GraphDao {
 
  protected async post(body: IQlInput): Promise<any> {
    this.parseEnums(body, "ENCODE");
+   const headers = this.getHeaders();
+   if(GraphDao.headerHookFn){
+     GraphDao.headerHookFn(headers);
+   }
    const response = await fetch(this.getUrl(), {
+     headers,
      body: JSON.stringify(body),
      credentials: "include",
-     headers: this.getHeaders(),
      method: "POST"
    });
    const contentData = await this.getDataContent(response);
