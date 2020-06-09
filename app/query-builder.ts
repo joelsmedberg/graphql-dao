@@ -45,8 +45,8 @@ export interface IInputParam { name: string; qlType: string; tsType: string; }
 
 export class QueryBuilder {
     private compiledQueryTemplate = Handlebars.compile(queryTemplate);
-    private compiledFnTemplate = Handlebars.compile(fnTemplate);
-    private classTemplate = Handlebars.compile(classTemplate);
+    private compiledFnTemplate = Handlebars.compile(fnTemplate, { noEscape: true });
+    private classTemplate = Handlebars.compile(classTemplate, { noEscape: true });
 
     public renderClass(arg: IDaoClassDescription, schema: ISchema): string {
         const fns = arg.fns.map(fn => this.renderFunction(fn, schema));
@@ -59,6 +59,11 @@ export class QueryBuilder {
         const input = daoFn.inputArguments.map(i => {
             if (getKind(i.qlType, schema) === "ENUM") {
                 return i.inputName + ": " + i.qlType + (i.isList ? "[]" : "");
+            } else if (getKind(i.qlType, schema) === "OBJECT" || getKind(i.qlType, schema) === "INPUT_OBJECT") {
+                if (i.isList) {
+                    return `${i.inputName}: Array<Partial<${i.tsType}>>`.replace("[]", "");
+                }
+                return `${i.inputName}: Partial<${i.tsType}>`;
             }
             return i.inputName + ": " + i.tsType;
         }).join(", ");

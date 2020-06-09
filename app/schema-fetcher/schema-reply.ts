@@ -54,4 +54,4 @@ export interface IArg extends INodeDescription {
   type: ISubType;
 }
 
-export type KIND = "OBJECT" | "LIST" | "SCALAR" | "INPUT_OBJECT" | "ENUM";
+export type KIND = "OBJECT" | "LIST" | "SCALAR" | "INPUT_OBJECT" | "ENUM" | "NON_NULL";

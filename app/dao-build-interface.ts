@@ -41,6 +41,7 @@ export interface ITypeTreeNode {
 }
 
 export interface IDaoFnInput {
+  isObject: boolean;
   inputName: string;
   tsType: string;
   qlType: string;

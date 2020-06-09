@@ -146,6 +146,7 @@ export class DaoInterfaceBuilder {
       tsType += "[]";
     }
     return {
+      isObject: a.kind === "OBJECT" || a.kind === "INPUT_OBJECT",
       inputName: a.name,
       isList: this.isList(a),
       qlType: qlType,

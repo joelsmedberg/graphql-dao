@@ -66,7 +66,7 @@ export class TypeBuilder {
     if (fileName && className) {
       fileName = fileName.endsWith(".ts") ? fileName.substr(0, fileName.length - 3) : fileName;
       let path = "./";
-      if (f.type.kind === "ENUM") {
+      if (this.isEnum(f)) {
         path += "../enums/";
       }
       return `import { ${className} } from "${path}${fileName}";`;
@@ -87,7 +87,8 @@ export class TypeBuilder {
   }
 
   private buildField(field: ITypeField): string {
-    return field.name + "?: " + this.fieldToTsType(field) + ";";
+    const nullable = field.type.kind === "NON_NULL" ? "" : " | null";
+    return `${field.name}: ${this.fieldToTsType(field)}${nullable};`;
   }
 
   private isPrimitive(tsType: string | undefined): boolean {
@@ -142,11 +143,17 @@ export class TypeBuilder {
     return !!qlType && (qlType.toLowerCase() === "void");
   }
 
+  private isEnum(type: ITypeField | IType): boolean {
+    if ("type" in type) {
+      return (type.type.kind === "ENUM") || ((type.type.ofType?.kind) === "ENUM");
+    }
+    return type.kind === "ENUM";
+  }
+
   private strToTsType(qlType: string | undefined, type: ITypeField | IType): string {
     if (!qlType) {
       return "any";
     }
-    const kind = "type" in type ? type.type.kind : type.kind;
     let tsType = "any";
     if (this.isDate(qlType)) {
       tsType = "Date";
@@ -154,7 +161,7 @@ export class TypeBuilder {
       tsType = "void";
     } else if (this.isPrimitive(qlType)) {
       tsType = qlType.toLowerCase();
-    } else if (kind === "ENUM") {
+    } else if (this.isEnum(type)) {
       tsType = qlType;
     } else {
       tsType = "I" + qlType;
@@ -172,6 +179,9 @@ export class TypeBuilder {
       return this.strToTsType(field.type.name, field);
     } else if (field.type.kind === "LIST" && field.type.ofType) {
       return this.strToTsType(field.type.ofType.name, field) + "[]";
+    }
+    if (field.type.kind === "NON_NULL" && field.type.ofType) {
+      return this.strToTsType(field.type.ofType.name, field);
     }
     return "any";
   }
