@@ -23,7 +23,11 @@ const query = `{
           }
           ofType {
             name,
-            kind
+            kind,
+            ofType {
+              name,
+              kind
+            }
           }
         }
         name
@@ -33,7 +37,11 @@ const query = `{
         kind
         ofType {
           name,
-          kind
+          kind,
+          ofType {
+            name,
+            kind
+          }
         }
       }
       name
@@ -42,7 +50,11 @@ const query = `{
           kind,
           ofType {
             name,
-            kind
+            kind,
+            ofType {
+              name,
+              kind
+            }
           }
         }
       }
@@ -59,18 +71,29 @@ fragment comparisonFields on __Type {
       kind,
       ofType {
         name,
-        kind
-      }
-    },
-    args {
-      description defaultValue,
-        type {
+        kind,
+        ofType {
           name,
           kind,
           ofType {
             name,
             kind
-          }}
+          }
+        }
+      }
+    },
+    args {
+      description defaultValue,
+      type {
+        name,
+        kind,
+        ofType {
+          name,
+          ofType {
+            name,
+            kind
+          }
+        }}
       name
     }
 	}

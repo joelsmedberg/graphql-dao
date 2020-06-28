@@ -1,5 +1,5 @@
 import * as changeCase from "change-case";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import * as fs from "fs";
 import * as Handlebars from "handlebars";
 import { ISchema, IType, ITypeField } from "./schema-fetcher/schema-reply";
 const TEMPLATE = `/**
@@ -18,8 +18,8 @@ export class TypeBuilder {
   }
 
   public run(schema: ISchema) {
-    if (!existsSync(this.outputFolder)) {
-      mkdirSync(this.outputFolder);
+    if (!fs.existsSync(this.outputFolder)) {
+      fs.mkdirSync(this.outputFolder);
     }
     for (const t of schema.types) {
       if (this.isSystemType(t.name!)) {
@@ -29,7 +29,10 @@ export class TypeBuilder {
       }
       const strOutput = this.buildClass(t);
       if (strOutput) {
-        writeFileSync(this.outputFolder + this.toTsFileName(t.name!), strOutput);
+        const filename = this.outputFolder + this.toTsFileName(t.name!);
+        if (!fs.existsSync(filename) || t.kind === "OBJECT") {
+          fs.writeFileSync(this.outputFolder + this.toTsFileName(t.name!), strOutput);
+        }
       }
     }
     console.log(this.outputFolder);

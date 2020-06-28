@@ -1,6 +1,6 @@
 // tslint:disable-next-line:max-line-length
 import { IDaoBuildInterface, IDaoClassDescription, IDaoFnInput, IDaoFunction, ITreeDictionary, ITypeTreeNode } from "./dao-build-interface";
-import { IArg, IField, ISchema, IType } from "./schema-fetcher/schema-reply";
+import { IArg, IField, ISchema, IType, ITypeField, ISubType } from "./schema-fetcher/schema-reply";
 
 const MAX_DEPTH = 5;
 export class DaoInterfaceBuilder {
@@ -53,20 +53,21 @@ export class DaoInterfaceBuilder {
   }
 
   private renderFieldTypeMap(schema: ISchema): ITreeDictionary {
-    return schema.types.reduce((prev, cur) => {
+    const root: ITreeDictionary = {};
+    for (const cur of schema.types) {
       if (!this.isSystemType(cur.name!)) {
-        prev[cur.name!] = {
+        root[cur.name!] = {
           name: undefined,
           nodes: [],
           primitives: [],
           type: undefined
         } as ITypeTreeNode;
         if (cur.fields) {
-          prev[cur.name!] = this.buildTypeTree(cur, schema, undefined, 0);
+          root[cur.name!] = this.buildTypeTree(cur, schema, undefined, 0);
         }
       }
-      return prev;
-    }, {} as any);
+    }
+    return root;
   }
 
   private isSystemType(name: string) {
@@ -93,8 +94,8 @@ export class DaoInterfaceBuilder {
     if (depth > MAX_DEPTH) {
       return this.DEFAULT_NODE;
     }
-    const primitives = t.fields ? t.fields.filter(f => this.isPrimitive(f.type.name)) : [];
-    const objs = t.fields ? t.fields.filter(f => !this.isPrimitive(f.type.name)) : [];
+    const primitives = t.fields ? t.fields.filter(f => this.isFieldTypePrimitive(f)) : [];
+    const objs = t.fields ? t.fields.filter(f => !this.isFieldTypePrimitive(f)) : [];
     const nodes = objs.map(obj => {
       // @ts-ignore
       const typeSub = this.getTypeFromSchema(schema, this.getBaseReturnType(obj));
@@ -137,7 +138,7 @@ export class DaoInterfaceBuilder {
   }
 
   private getInputArgument(a: IArg): IDaoFnInput {
-    const qlType = a.type.name || (a.type.ofType && a.type.ofType.name);
+    const qlType = a.type.name || a.type?.ofType?.name || a.type?.ofType?.ofType?.name;
     let tsType = this.toTsType(qlType || "");
     if (tsType.endsWith("Input")) {
       tsType = tsType.substr(0, tsType.indexOf("Input"));
@@ -158,6 +159,14 @@ export class DaoInterfaceBuilder {
   //   return !this.isPrimitive(this.getBaseReturnType(field));
   // }
 
+  private isFieldTypePrimitive(fieldType: ITypeField): boolean {
+    if (fieldType.type.kind === "NON_NULL") {
+      return this.isPrimitive(fieldType.type.ofType?.name)
+    }
+    return this.isPrimitive(fieldType.type.name);
+    return false;
+  }
+
   private isPrimitive(tsType: string | undefined): boolean {
     if (!tsType) {
       return false;
@@ -167,12 +176,26 @@ export class DaoInterfaceBuilder {
   }
 
   private getBaseReturnType(field: IField | IArg): string {
-    if (field.type.name) {
-      return field.type.name;
-    } else if (this.isList(field) && field.type.ofType) {
-      return field.type.ofType.name!;
+    return this.getOffType(field.type);
+    // if (field.type.name) {
+    //   return field.type.name;
+    // } else if (field.kind === "NON_NULL" && field.type.ofType?.name) {
+    //   return field.type.ofType.name;
+    // } else if (field.type.kind === "NON_NULL") {
+    //   return field.type.ofType!.name!;
+    // }
+    // else if (this.isList(field) && field.type.ofType) {
+    // }
+    // return "any";
+  }
+
+  private getOffType(t: ISubType): string {
+    if(t.name){
+      return t.name
+    } else if(t.ofType){
+      return this.getOffType(t.ofType);
     }
-    return "any";
+    throw Error("Foo bar");
   }
 
   private field2ts(field: IField | IArg): string {

@@ -1,6 +1,6 @@
 {
   "name": "graphql-dao-builder",
-  "version": "1.8.0",
+  "version": "1.8.4",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -28,7 +28,7 @@
     "change-case": "^4.0.1",
     "commander": "^2.15.1",
     "handlebars": "^4.5.3",
-    "request": "^2.87.0",
+    "request": "^2.88.2",
     "request-promise-native": "^1.0.8"
   },
   "devDependencies": {
@@ -36,7 +36,7 @@
     "@types/handlebars": "^4.0.37",
     "@types/node": "^8.0.53",
     "@types/request": "^2.47.0",
-    "@types/request-promise-native": "^1.0.13",
+    "@types/request-promise-native": "^1.0.17",
     "@types/rimraf": "^2.0.2",
     "rimraf": "^2.6.2"
   }
