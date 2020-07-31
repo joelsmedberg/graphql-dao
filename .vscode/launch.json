@@ -14,7 +14,7 @@
       "stopOnEntry": false,
       "args": ["--host", "https://backend-dev.mittskolval.se/admin-ql"],
       // "args": ["--node"],
-      "preLaunchTask": "compile",
+      "preLaunchTask": "build",
       "runtimeExecutable": null,
       "runtimeArgs": [
         "--nolazy"
