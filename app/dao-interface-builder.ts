@@ -209,7 +209,8 @@ export class DaoInterfaceBuilder {
 
   private toTsType(qlType: string): string {
     if (!qlType) {
-      return "any";
+      throw new Error("Cannot identify type " + qlType);
+      // return "any";
     } else if (this.isDate(qlType)) {
       return "Date";
     } else if (this.isVoid(qlType)) {

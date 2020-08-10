@@ -1,7 +1,7 @@
 import * as changeCase from "change-case";
 import * as fs from "fs";
 import * as Handlebars from "handlebars";
-import { ISchema, IType, ITypeField } from "./schema-fetcher/schema-reply";
+import { ISchema, IType, ITypeField, ISubType } from "./schema-fetcher/schema-reply";
 const TEMPLATE = `/**
  * Auto generated, do not modify!
  */
@@ -62,7 +62,7 @@ export class TypeBuilder {
   }
 
   private fieldToImport(f: ITypeField): string {
-    let input = f.type.name || (f.type.ofType && f.type.ofType.name) || "";
+    let input = this.getOffType(f.type);
     input = this.stripInputType(input);
     let fileName = this.toTsFileName(input);
     const className = this.strToTsType(input, f);
@@ -155,7 +155,8 @@ export class TypeBuilder {
 
   private strToTsType(qlType: string | undefined, type: ITypeField | IType): string {
     if (!qlType) {
-      return "any";
+      throw new Error("Unable to find type, " + type);
+      // return "any";
     }
     let tsType = "any";
     if (this.isDate(qlType)) {
@@ -174,18 +175,32 @@ export class TypeBuilder {
     return tsType;
   }
 
-  private fieldToTsType(field: ITypeField | undefined): string {
-    if (!field) {
-      return "any";
-    }
+  private fieldToTsType(field: ITypeField): string {
     if (field.type.name) {
       return this.strToTsType(field.type.name, field);
-    } else if (field.type.kind === "LIST" && field.type.ofType) {
-      return this.strToTsType(field.type.ofType.name, field) + "[]";
     }
-    if (field.type.kind === "NON_NULL" && field.type.ofType) {
-      return this.strToTsType(field.type.ofType.name, field);
-    }
-    return "any";
+    const tsType = this.strToTsType(this.getOffType(field.type), field);
+    const isList = this.getOfTypeList(field.type);
+    return tsType + (isList ? "[]" : "");
   }
+
+  private getOfTypeList(t: ISubType): boolean {
+    if (t.kind === "LIST") {
+      return true;
+    }
+    if (t.ofType) {
+      return this.getOfTypeList(t.ofType);
+    }
+    return false;
+  }
+
+  private getOffType(t: ISubType): string {
+    if (t.name) {
+      return t.name
+    } else if (t.ofType) {
+      return this.getOffType(t.ofType);
+    }
+    throw Error("Foo bar");
+  }
+
 }
